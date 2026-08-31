@@ -23,6 +23,15 @@ USER_LIMITS = {}
 PRICE_STARS = 15
 PACK_AMOUNT = 10
 
+# Ссылки на документы от платёжной системы
+DOCS_KEYBOARD = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="📜 Пользовательское соглашение", url="https://telegra.ph/PUBLICHNAYA-OFERTA-08-12-15")],
+        [InlineKeyboardButton(text="🔒 Политика конфиденциальности", url="https://telegra.ph/POLITIKA-KONFIDENCIALNOSTI-08-12-99")],
+        [InlineKeyboardButton(text="💬 Поддержка", url="https://t.me/EmojiBanner_bot")]
+    ]
+)
+
 def split_image_into_emojis(image_bytes: bytes, cols: int = 3, rows: int = 1) -> list[bytes]:
     img = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
     w, h = img.size
@@ -47,7 +56,9 @@ async def cmd_start(message: types.Message):
     await message.answer(
         f"👋 Привет! Я создаю эмодзи-баннеры для постов.\n\n"
         f"🎁 Доступно бесплатных генераций: **{USER_LIMITS[uid]}**\n\n"
-        "Отправь картинку, и я соберу её в готовый эмодзи-пак!"
+        "Отправь картинку, и я соберу её в готовый эмодзи-пак!\n\n"
+        "ℹ️ Документы сервиса доступны по кнопкам ниже:",
+        reply_markup=DOCS_KEYBOARD
     )
 
 @dp.message(F.photo | F.document)
@@ -59,7 +70,8 @@ async def handle_image(message: types.Message):
     if USER_LIMITS[uid] <= 0:
         pay_kb = InlineKeyboardMarkup(
             inline_keyboard=[
-                [InlineKeyboardButton(text=f"Купить {PACK_AMOUNT} паков за {PRICE_STARS} ⭐️", callback_data="buy_stars")]
+                [InlineKeyboardButton(text=f"Купить {PACK_AMOUNT} паков за {PRICE_STARS} ⭐️", callback_data="buy_stars")],
+                [InlineKeyboardButton(text="📜 Документы сервиса", callback_data="show_docs")]
             ]
         )
         await message.answer(
@@ -120,6 +132,11 @@ async def handle_image(message: types.Message):
     except Exception as e:
         await wait_msg.edit_text(f"⚠️ Ошибка: {e}")
 
+@dp.callback_query(F.data == "show_docs")
+async def show_docs_callback(callback: types.CallbackQuery):
+    await callback.message.answer("Официальная документация сервиса:", reply_markup=DOCS_KEYBOARD)
+    await callback.answer()
+
 @dp.callback_query(F.data == "buy_stars")
 async def send_invoice(callback: types.CallbackQuery):
     await callback.bot.send_invoice(
@@ -156,3 +173,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+        
